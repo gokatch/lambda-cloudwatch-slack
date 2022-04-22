@@ -1,0 +1,77 @@
+name: '[DEV] lambda-cloudwatch-slack deployment'
+
+on:
+  push:
+    tags:
+      - dev-*
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: lambda-cloudwatch-slack
+  LAMBDA_NAME: lambda-cloudwatch-slack
+  SLACK_CHANNEL: e-alerts-and-monitoring
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Deployment starting webhook
+        uses: slackapi/slack-github-action@v1.15.0
+        with:
+          payload: '{"channel":"#${{ env.SLACK_CHANNEL }}","text":"[DEV] ${{ env.LAMBDA_NAME }} deployment ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }} STARTING."}'
+        env:
+          SLACK_WEBHOOK_URL: https://hooks.slack.com/services/${{ secrets.SLACK_NOTIFICATIONS_TOKEN }}
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE_TO_ASSUME }}
+          role-duration-seconds: 1200
+          role-session-name: gh-action-deploy
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1.3.3
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+      - name: Deploy lambda
+        run: |
+          aws lambda update-function-code --function-name $LAMBDA_NAME --image-uri ${{ steps.build-image.outputs.image }}
+
+      - name: Deployment completed webhook
+        uses: slackapi/slack-github-action@v1.15.0
+        with:
+          payload: '{"channel":"#${{ env.SLACK_CHANNEL }}","text":"[DEV] ${{ env.LAMBDA_NAME }} deployment ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }} COMPLETED."}'
+        env:
+          SLACK_WEBHOOK_URL: https://hooks.slack.com/services/${{ secrets.SLACK_NOTIFICATIONS_TOKEN }}
+
+      - name: Deployment failed webhook
+        uses: slackapi/slack-github-action@v1.15.0
+        if: failure()
+        with:
+          payload: '{"channel":"#${{ env.SLACK_CHANNEL }}","text":"[DEV] ${{ env.LAMBDA_NAME }} deployment ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }} FAILED."}'
+        env:
+          SLACK_WEBHOOK_URL: https://hooks.slack.com/services/${{ secrets.SLACK_NOTIFICATIONS_TOKEN }}
