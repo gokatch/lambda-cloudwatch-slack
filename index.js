@@ -421,7 +421,7 @@ var processEvent = function(event, context) {
     console.log("processing autoscaling notification");
     slackMessage = handleAutoScaling(event, context);
   }
-  else if(eventSnsMessage && 'detail-type' in eventSnsMessage && 'ECS Task State Change' in eventSnsMessage.detail-type){
+  else if(eventSnsMessage && 'detail-type' in eventSnsMessage && 'ECS Task State Change' in eventSnsMessage["detail-type"]){
     console.log("processing ecs task notification");
     slackMessage = handleEcsTask(event,context);
   }
