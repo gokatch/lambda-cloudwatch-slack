@@ -321,10 +321,6 @@ var handleEcsTask = function(event, context) {
   var alarmDescription = "A container for the service " + serviceName + " exited unexpectedly" ;
   var color = "danger";
 
-  if (message.detail.containers[0].exitCode === 0) {
-      return;
-  }
-
   var slackMessage = {
     text: "*" + subject + "*",
     attachments: [
