@@ -311,6 +311,36 @@ var handleAutoScaling = function(event, context) {
   return _.merge(slackMessage, baseSlackMessage);
 };
 
+var handleEcsTask = function(event, context) {
+  var timestamp = (new Date(event.Records[0].Sns.Timestamp)).getTime()/1000;
+  var message = JSON.parse(event.Records[0].Sns.Message);
+  var region = event.Records[0].EventSubscriptionArn.split(":")[3];
+  var serviceName = message.detail.containers[0].name;
+  var subject = "AWS ECS Service Notification";
+  var alarmName = serviceName + " container crashed";
+  var alarmDescription = "A container for the service " + serviceName + " exited unexpectedly" ;
+  var color = "danger";
+
+  if (message.detail.containers[0].exitCode === 0) {
+      return;
+  }
+
+  var slackMessage = {
+    text: "*" + subject + "*",
+    attachments: [
+      {
+        "color": color,
+        "fields": [
+          { "title": "Alarm Name", "value": alarmName, "short": true },
+          { "title": "Alarm Description", "value": alarmDescription, "short": false}
+        ],
+        "ts":  timestamp
+      }
+    ]
+  };
+  return _.merge(slackMessage, baseSlackMessage);
+};
+
 var handleCatchAll = function(event, context) {
 
     var record = event.Records[0]
@@ -390,6 +420,10 @@ var processEvent = function(event, context) {
   else if(eventSubscriptionArn.indexOf(config.services.autoscaling.match_text) > -1 || eventSnsSubject.indexOf(config.services.autoscaling.match_text) > -1 || eventSnsMessageRaw.indexOf(config.services.autoscaling.match_text) > -1){
     console.log("processing autoscaling notification");
     slackMessage = handleAutoScaling(event, context);
+  }
+  else if(eventSnsMessage && 'detail-type' in eventSnsMessage && 'ECS Task State Change' in eventSnsMessage.detail-type){
+    console.log("processing ecs task notification");
+    slackMessage = handleEcsTask(event,context);
   }
   else{
     slackMessage = handleCatchAll(event, context);
