@@ -318,7 +318,7 @@ var handleEcsTask = function(event, context) {
   var serviceName = message.detail.containers[0].name;
   var subject = "AWS ECS Service Notification";
   var alarmName = serviceName + " container crashed";
-  var alarmDescription = "A container for the service " + serviceName + " exited unexpectedly" ;
+  var alarmDescription = "A container for the service " + serviceName + " exited unexpectedly. Check CloudWatch logs for more info" ;
   var color = "danger";
 
   var slackMessage = {
@@ -327,8 +327,8 @@ var handleEcsTask = function(event, context) {
       {
         "color": color,
         "fields": [
-          { "title": "Alarm Name", "value": alarmName, "short": true },
-          { "title": "Alarm Description", "value": alarmDescription, "short": false}
+          { "title": "Alarm", "value": alarmName, "short": true },
+          { "title": "Description", "value": alarmDescription, "short": false}
         ],
         "ts":  timestamp
       }
