@@ -317,9 +317,35 @@ var handleEcsTask = function(event, context) {
   var region = event.Records[0].EventSubscriptionArn.split(":")[3];
   var serviceName = message.detail.containers[0].name;
   var subject = "AWS ECS Service Notification";
-  var alarmName = serviceName + " container crashed";
+  var alarmName = "Service *" + serviceName + " container crashed";
   var alarmDescription = "A container for the service " + serviceName + " exited unexpectedly. Check CloudWatch logs for more info" ;
   var color = "danger";
+
+  var slackMessage = {
+    text: "*" + subject + "*",
+    attachments: [
+      {
+        "color": color,
+        "fields": [
+          { "title": "Alarm", "value": alarmName, "short": true },
+          { "title": "Description", "value": alarmDescription, "short": false}
+        ],
+        "ts":  timestamp
+      }
+    ]
+  };
+  return _.merge(slackMessage, baseSlackMessage);
+};
+
+var handleEcsDeployment = function(event, context) {
+  var timestamp = (new Date(event.Records[0].Sns.Timestamp)).getTime()/1000;
+  var message = JSON.parse(event.Records[0].Sns.Message);
+  var region = event.Records[0].EventSubscriptionArn.split(":")[3];
+  var serviceName = message.detail.containers[0].name;
+  var subject = "AWS ECS Deployment Notification";
+  var alarmName = "Service *" + serviceName + "* deployment failed";
+  var alarmDescription = "A deployment for the service *" + serviceName + "* failed and was rolled back to the previous version" ;
+  var color = "warning";
 
   var slackMessage = {
     text: "*" + subject + "*",
@@ -420,6 +446,10 @@ var processEvent = function(event, context) {
   else if(eventSnsMessage && 'detail-type' in eventSnsMessage && eventSnsMessage["detail-type"] === 'ECS Task State Change'){
     console.log("processing ecs task notification");
     slackMessage = handleEcsTask(event,context);
+  }
+  else if (eventSnsMessage && 'detail-type' in eventSnsMessage && eventSnsMessage["detail-type"] === 'ECS Deployment State Change'){
+    console.log("processing ecs deployment notification");
+    slackMessage = handleEcsDeployment(event,context);
   }
   else{
     slackMessage = handleCatchAll(event, context);
