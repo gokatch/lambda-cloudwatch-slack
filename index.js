@@ -317,8 +317,8 @@ var handleEcsTask = function(event, context) {
   var region = event.Records[0].EventSubscriptionArn.split(":")[3];
   var serviceName = message.detail.containers[0].name;
   var subject = "AWS ECS Service Notification";
-  var alarmName = "Service *" + serviceName + " container crashed";
-  var alarmDescription = "A container for the service " + serviceName + " exited unexpectedly. Check CloudWatch logs for more info" ;
+  var alarmName = "Service *" + serviceName + "* container crashed";
+  var alarmDescription = "A container for the service *" + serviceName + "* exited unexpectedly. Check CloudWatch logs for more info" ;
   var color = "danger";
 
   var slackMessage = {
@@ -344,7 +344,7 @@ var handleEcsDeployment = function(event, context) {
   var serviceName = message.detail.containers[0].name;
   var subject = "AWS ECS Deployment Notification";
   var alarmName = "Service *" + serviceName + "* deployment failed";
-  var alarmDescription = "A deployment for the service *" + serviceName + "* failed and was rolled back to the previous version" ;
+  var alarmDescription = "A deployment for the service *" + serviceName + "* failed and a rollbawas rolled backck to the previous version has been triggered" ;
   var color = "warning";
 
   var slackMessage = {
