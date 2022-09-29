@@ -315,11 +315,37 @@ var handleEcsTask = function(event, context) {
   var timestamp = (new Date(event.Records[0].Sns.Timestamp)).getTime()/1000;
   var message = JSON.parse(event.Records[0].Sns.Message);
   var region = event.Records[0].EventSubscriptionArn.split(":")[3];
+  var cloudwatchUrl = "https://" + region + ".console.aws.amazon.com/cloudwatch/home?region=" + region + "#logsV2:log-groups"
   var serviceName = message.detail.containers[0].name;
   var subject = "AWS ECS Service Notification";
-  var alarmName = serviceName + " container crashed";
-  var alarmDescription = "A container for the service " + serviceName + " exited unexpectedly. Check CloudWatch logs for more info" ;
+  var alarmName = "Service *" + serviceName + "* container crashed";
+  var alarmDescription = "A container for the service *" + serviceName + "* exited unexpectedly. Check CloudWatch logs for more info: " + cloudwatchUrl;
   var color = "danger";
+  var slackMessage = {
+    text: "*" + subject + "*",
+    attachments: [
+      {
+        "color": color,
+        "fields": [
+          { "title": "Alarm", "value": alarmName, "short": true },
+          { "title": "Description", "value": alarmDescription, "short": false}
+        ],
+        "ts":  timestamp
+      }
+    ]
+  };
+  return _.merge(slackMessage, baseSlackMessage);
+};
+
+var handleEcsDeployment = function(event, context) {
+  var timestamp = (new Date(event.Records[0].Sns.Timestamp)).getTime()/1000;
+  var message = JSON.parse(event.Records[0].Sns.Message);
+  var region = event.Records[0].EventSubscriptionArn.split(":")[3];
+  var serviceName = message.resources[0].split(":")[5].split("/")[2];
+  var subject = "AWS ECS Deployment Notification";
+  var alarmName = "Service *" + serviceName + "* deployment failed";
+  var alarmDescription = "A deployment of the service *" + serviceName + "* failed and a rollback to the previous version has been triggered" ;
+  var color = "warning";
 
   var slackMessage = {
     text: "*" + subject + "*",
@@ -420,6 +446,10 @@ var processEvent = function(event, context) {
   else if(eventSnsMessage && 'detail-type' in eventSnsMessage && eventSnsMessage["detail-type"] === 'ECS Task State Change'){
     console.log("processing ecs task notification");
     slackMessage = handleEcsTask(event,context);
+  }
+  else if (eventSnsMessage && 'detail-type' in eventSnsMessage && eventSnsMessage["detail-type"] === 'ECS Deployment State Change'){
+    console.log("processing ecs deployment notification");
+    slackMessage = handleEcsDeployment(event,context);
   }
   else{
     slackMessage = handleCatchAll(event, context);
