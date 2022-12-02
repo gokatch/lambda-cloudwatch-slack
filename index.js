@@ -319,7 +319,12 @@ var handleEcsTask = function(event, context) {
   var serviceName = message.detail.containers[0].name;
   var subject = "AWS ECS Service Notification";
   var alarmName = "Service *" + serviceName + "* container crashed";
-  var alarmDescription = "A container for the service *" + serviceName + "* exited unexpectedly. Check CloudWatch logs for more info: " + cloudwatchUrl;
+  if (message.detail.containers[0].reason.includes("OutOfMemoryError")) {
+    var reason = "due to an Out Of Memory error (OOM)"
+  } else {
+    var reason = "unexpectedly"
+  }
+  var alarmDescription = "A container for the service *" + serviceName + "* exited " + reason + ". Check CloudWatch logs for more info: " + cloudwatchUrl;
   var color = "danger";
   var slackMessage = {
     text: "*" + subject + "*",
