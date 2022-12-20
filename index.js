@@ -3,6 +3,7 @@ var url = require('url');
 var https = require('https');
 var config = require('./config');
 var _ = require('lodash');
+const { env } = require('process');
 var hookUrl;
 
 var baseSlackMessage = {}
@@ -311,12 +312,20 @@ var handleAutoScaling = function(event, context) {
   return _.merge(slackMessage, baseSlackMessage);
 };
 
+https://us-east-1.console.aws.amazon.com/cloudwatch/home?region=us-east-1#logsV2:log-groups/log-group/$252Fecs$252Fdev$252Fkatch-api/log-events/katch$252Fkatch-api-dev$252Fd466f97b5a5d43148bfb03e53b51ef31
+
 var handleEcsTask = function(event, context) {
   var timestamp = (new Date(event.Records[0].Sns.Timestamp)).getTime()/1000;
   var message = JSON.parse(event.Records[0].Sns.Message);
   var region = event.Records[0].EventSubscriptionArn.split(":")[3];
-  var cloudwatchUrl = "https://" + region + ".console.aws.amazon.com/cloudwatch/home?region=" + region + "#logsV2:log-groups"
   var serviceName = message.detail.containers[0].name;
+  var logstreamId = message.resources[0].split("/")[2];
+  var serviceNameWithoutEnv = serviceName.split("-" + process.env.SHORT_ENVIRONMENT)[0];
+  var rawLogGroup = "/ecs/" + process.env.SHORT_ENVIRONMENT + "/" + serviceNameWithoutEnv;
+  var rawLogStream = "katch/" + serviceName + "/" + logstreamId;
+  var encodedLogGroup = encodeURIComponent(encodeURIComponent(rawLogGroup));
+  var encodedLogStream = encodeURIComponent(encodeURIComponent(rawLogStream));
+  var cloudwatchUrl = "https://" + region + ".console.aws.amazon.com/cloudwatch/home?region=" + region + "#logsV2:log-groups/log-group/" + encodedLogGroup + "/log-events/" + encodedLogStream;
   var subject = "AWS ECS Service Notification";
   var alarmName = "Service *" + serviceName + "* container crashed";
   if (message.detail.containers[0].reason.includes("OutOfMemoryError")) {
