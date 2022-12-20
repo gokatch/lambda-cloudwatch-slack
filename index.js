@@ -312,8 +312,6 @@ var handleAutoScaling = function(event, context) {
   return _.merge(slackMessage, baseSlackMessage);
 };
 
-https://us-east-1.console.aws.amazon.com/cloudwatch/home?region=us-east-1#logsV2:log-groups/log-group/$252Fecs$252Fdev$252Fkatch-api/log-events/katch$252Fkatch-api-dev$252Fd466f97b5a5d43148bfb03e53b51ef31
-
 var handleEcsTask = function(event, context) {
   var timestamp = (new Date(event.Records[0].Sns.Timestamp)).getTime()/1000;
   var message = JSON.parse(event.Records[0].Sns.Message);
