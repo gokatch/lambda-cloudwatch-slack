@@ -3,6 +3,7 @@ var url = require('url');
 var https = require('https');
 var config = require('./config');
 var _ = require('lodash');
+const { env } = require('process');
 var hookUrl;
 
 var baseSlackMessage = {}
@@ -315,8 +316,14 @@ var handleEcsTask = function(event, context) {
   var timestamp = (new Date(event.Records[0].Sns.Timestamp)).getTime()/1000;
   var message = JSON.parse(event.Records[0].Sns.Message);
   var region = event.Records[0].EventSubscriptionArn.split(":")[3];
-  var cloudwatchUrl = "https://" + region + ".console.aws.amazon.com/cloudwatch/home?region=" + region + "#logsV2:log-groups"
   var serviceName = message.detail.containers[0].name;
+  var logstreamId = message.resources[0].split("/")[2];
+  var serviceNameWithoutEnv = serviceName.split("-" + process.env.SHORT_ENVIRONMENT)[0];
+  var rawLogGroup = "/ecs/" + process.env.SHORT_ENVIRONMENT + "/" + serviceNameWithoutEnv;
+  var rawLogStream = "katch/" + serviceName + "/" + logstreamId;
+  var encodedLogGroup = encodeURIComponent(encodeURIComponent(rawLogGroup));
+  var encodedLogStream = encodeURIComponent(encodeURIComponent(rawLogStream));
+  var cloudwatchUrl = "https://" + region + ".console.aws.amazon.com/cloudwatch/home?region=" + region + "#logsV2:log-groups/log-group/" + encodedLogGroup + "/log-events/" + encodedLogStream;
   var subject = "AWS ECS Service Notification";
   var alarmName = "Service *" + serviceName + "* container crashed";
   if (message.detail.containers[0].reason.includes("OutOfMemoryError")) {
