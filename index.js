@@ -238,7 +238,6 @@ var handleCloudWatch = function(event, context) {
   var oldState = message.OldStateValue;
   var newState = message.NewStateValue;
   var alarmDescription = message.AlarmDescription;
-  var alarmReason = message.NewStateReason;
   var trigger = message.Trigger;
   var color = "warning";
 
@@ -419,6 +418,7 @@ var handleCatchAll = function(event, context) {
 
 var processEvent = function(event, context) {
   console.log("sns received:" + JSON.stringify(event, null, 2));
+  const timeThreashold = 180000; // 180000 milliseconds === 3 minutes
   var slackMessage = null;
   var eventSubscriptionArn = event.Records[0].EventSubscriptionArn;
   var eventSnsSubject = event.Records[0].Sns.Subject || 'no subject';
@@ -440,6 +440,10 @@ var processEvent = function(event, context) {
     slackMessage = handleElasticBeanstalk(event,context)
   }
   else if(eventSnsMessage && 'AlarmName' in eventSnsMessage && 'AlarmDescription' in eventSnsMessage){
+    if(eventSnsMessage['OldStateValue'] === 'INSUFFICIENT_DATA' && new Date(eventSnsMessage['StateChangeTime']) - new Date(eventSnsMessage['AlarmConfigurationUpdatedTimestamp']) < timeThreashold) {
+      console.log("filter out new instance alarms");
+      return;
+    }
     console.log("processing cloudwatch notification");
     slackMessage = handleCloudWatch(event,context);
   }
