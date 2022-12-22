@@ -438,7 +438,11 @@ var processEvent = function(event, context) {
     console.log("processing elasticbeanstalk notification");
     slackMessage = handleElasticBeanstalk(event,context)
   }
-  else if(eventSnsMessage && 'AlarmName' in eventSnsMessage && 'AlarmDescription' in eventSnsMessage && eventSnsMessage['OldStateValue'] !== 'INSUFFICIENT_DATA' ){
+  else if(eventSnsMessage && 'AlarmName' in eventSnsMessage && 'AlarmDescription' in eventSnsMessage){
+    if(eventSnsMessage['OldStateValue'] === 'INSUFFICIENT_DATA') {
+      console.log("filter out new instance alarms");
+      return;
+    }
     console.log("processing cloudwatch notification");
     slackMessage = handleCloudWatch(event,context);
   }
