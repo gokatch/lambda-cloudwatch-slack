@@ -9,7 +9,7 @@ env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: lambda-cloudwatch-slack
   LAMBDA_NAME: lambda-cloudwatch-slack
-  SLACK_CHANNEL: e-dev-alerts-and-monitoring
+  SLACK_CHANNEL: e-alerts-and-monitoring-dev
 
 defaults:
   run:
