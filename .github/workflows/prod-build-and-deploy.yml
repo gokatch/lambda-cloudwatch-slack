@@ -3,7 +3,7 @@ name: '[PRO] katch-lambda-resize-images deployment'
 on:
   push:
     tags:
-      - prod-v*
+      - prod-*
 
 env:
   AWS_REGION: us-east-1
